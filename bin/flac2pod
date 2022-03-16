@@ -35,13 +35,6 @@ def create_destination():
             .mkdir(0o700, parents=True, exist_ok=True)
 
 
-def scan_destination_convert_alac():
-    for _file in source_directories[1]:
-        if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
-            system(f"ffmpeg -i '{_file}.flac' -c:v copy -c:a alac -map_metadata 0 -id3v2_version 3 "
-                   f"'{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a'")
-
-
 def scan_destination_convert_mp3():
     for _file in source_directories[1]:
         print(_file)
@@ -77,8 +70,5 @@ if destination.endswith('/'):
 
 source_directories = scan_source()
 create_destination()
-if argument.__contains__('--alac'):
-    scan_destination_convert_alac()
-else:
-    scan_destination_convert_mp3()
-    rg2sc()
+scan_destination_convert_mp3()
+rg2sc()
