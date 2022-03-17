@@ -4,15 +4,14 @@ Seamlessly converts your existing FLAC library to be played on an iPod Classic.
 This script makes use of ffmpeg to convert your existing FLAC music library to MP3-320 for easy iPod Classic use. It also takes advantage of "rg2sc" (https://github.com/rwinkhart/rg2sc) to convert any existing ReplayGain tags to Apple Sound Check tags that are compatible with Apple products.
 
 # Usage
-
+Simply run:
 ```
-flac2pod  # will convert library to MP3-320 - only updates missing Sound Check tags
-
-flac2pod -f  # will convert library to MP3-320 and forcefully update Sound Check tags (even if they already exist)
+flac2pod
 ```
+...and you will be prompted for your source and destination directories.
 
 In order for flac2pod to function, your library must be structured as follows:
-Library dir -> Artist dir -> Album dir -> FLAC files
+library parent dir -> artist dir -> album dir -> FLAC files
 
 When prompted for the source directory, you want to input your library parent directory.
 
