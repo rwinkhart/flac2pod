@@ -37,18 +37,20 @@ def create_destination():
 
 def scan_destination_convert_mp3():
     for _file in source_directories[1]:
-        print(_file)
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
-            system("ffmpeg -i '" + _file.replace("'", "\\'") +
-                   ".flac' -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 '" +
-                   _file.replace(path.expanduser(source), path.expanduser(destination)).replace("'", "\\'") + ".mp3'")
+            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'") + '.flac'
+            _file_d = _file.replace(path.expanduser(source),
+                                    path.expanduser(destination)).replace(' ', '\\ ').replace("'", "\\'") + '.mp3'
+            print(f"\n\u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
+            system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
+            rg2sc(_file_d)
 
 
-def rg2sc():
+def rg2sc(_file):
     if argument.__contains__('-f'):
-        system(f"{rg2sc} -f {destination}")
+        system(f"rg2sc -f {_file}")
     else:
-        system(f"{rg2sc} {destination}")
+        system(f"rg2sc {_file}")
 
 
 # program start sequence
@@ -72,4 +74,3 @@ if destination.endswith('/'):
 source_directories = scan_source()
 create_destination()
 scan_destination_convert_mp3()
-rg2sc()
