@@ -11,6 +11,7 @@ flac2pod
 ...and you will be prompted for your source and destination directories.
 
 In order for flac2pod to function, your library must be structured as follows:
+
 library parent dir -> artist dir -> album dir -> FLAC files
 
 When prompted for the source directory, you want to input your library parent directory.
