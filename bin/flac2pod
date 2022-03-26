@@ -37,9 +37,11 @@ def create_destination():
 def scan_destination_convert_mp3():
     for _file in source_directories[1]:
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
-            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'") + '.flac'
-            _file_d = _file.replace(path.expanduser(source),
-                                    path.expanduser(destination)).replace(' ', '\\ ').replace("'", "\\'") + '.mp3'
+            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
+                          ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
+            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ').replace\
+                          ("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&').replace\
+                          ('`', '\\`').replace('$', '\\$') + '.mp3'
             print(f"\n\u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
             rg2sc(_file_d)
