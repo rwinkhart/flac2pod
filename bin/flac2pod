@@ -5,6 +5,7 @@
 from os import path, system, walk
 from pathlib import Path
 from sys import argv
+from mutagen.id3 import ID3
 
 
 # utility functions
@@ -49,10 +50,21 @@ def scan_destination_convert_mp3():
             else:
                 system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
             rg2sc(_file_d)
+            strip_txxx_tags(Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3"))
 
 
 def rg2sc(_file):
     system(f"rg2sc -f {_file}")
+
+
+def strip_txxx_tags(_file):
+    audio = ID3(_file)
+    for _tag in audio.pprint().split('\n'):
+        if _tag.startswith('TXXX'):
+            _txxx_tag = _tag.replace('=', ':', 1).split('=', 1)[0]
+            audio.pop(_txxx_tag)
+    audio.update_to_v23()
+    audio.save(v2_version=3)
 
 
 # program start sequence
