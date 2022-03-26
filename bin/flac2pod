@@ -4,6 +4,7 @@
 
 from os import path, system, walk
 from pathlib import Path
+from sys import argv
 
 
 # utility functions
@@ -43,7 +44,10 @@ def scan_destination_convert_mp3():
                           ("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&').replace\
                           ('`', '\\`').replace('$', '\\$') + '.mp3'
             print(f"\n\u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
-            system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
+            if argument.__contains__('-s'):
+                system(f"ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
+            else:
+                system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
             rg2sc(_file_d)
 
 
@@ -52,6 +56,12 @@ def rg2sc(_file):
 
 
 # program start sequence
+
+# retrieve typed argument
+argument_list = argv
+i, argument = 0, ''
+for user_argument in argument_list:
+    argument += user_argument
 
 source = input('Source parent directory: ')
 if source.endswith('/'):
