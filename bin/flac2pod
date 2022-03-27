@@ -2,10 +2,11 @@
 
 # external modules
 
-from os import path, system, walk
+from os import cpu_count, path, walk
 from pathlib import Path
-from sys import argv
-from mutagen.id3 import ID3
+from sys import argv, exit as s_exit
+from time import sleep
+from subprocess import check_output, Popen
 
 
 # utility functions
@@ -37,37 +38,39 @@ def create_destination():
 
 
 def scan_destination_convert_mp3():
+    _i = 0
     for _file in source_directories[1]:
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
                           ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
-            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ').replace\
-                          ("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&').replace\
-                          ('`', '\\`').replace('$', '\\$') + '.mp3'
+            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
+                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&')\
+                          .replace('`', '\\`').replace('$', '\\$') + '.mp3'
+            _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+            print(_active_processes)
+            if _active_processes >= cpu_count():
+                while _active_processes >= cpu_count():
+                    print(f"\nThere are already {cpu_count()} processes running...\n")
+                    sleep(1)
+                    _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+            _i += 1
             print(f"\n\u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             if '-s' in arguments:
-                system(f"ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
+                       f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s {_file_d}"
             else:
-                system(f"ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0 -id3v2_version 3 {_file_d}")
-            rg2sc(_file_d)
-            strip_txxx_tags(Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3"))
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
+                       f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f {_file_d}"
+            Popen(_cmd, shell=True)
+    _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+    while _active_processes != 0:
+        print('\nPlease wait for the remaining conversions to complete...\n')
+        sleep(1)
+        _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+    sleep(1)
+    print('\niPod conversion complete!\n')
+    s_exit()
 
-
-def rg2sc(_file):
-    system(f"rg2sc -f {_file}")
-
-
-def strip_txxx_tags(_file):
-    audio = ID3(_file)
-    for _tag in audio.pprint().split('\n'):
-        if _tag.startswith('TXXX'):
-            _txxx_tag = _tag.replace('=', ':', 1).split('=', 1)[0]
-            audio.pop(_txxx_tag)
-    audio.update_to_v23()
-    audio.save(v2_version=3)
-
-
-# program start sequence
 
 # retrieve typed argument
 arguments = argv
