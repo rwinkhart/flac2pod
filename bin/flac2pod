@@ -38,8 +38,10 @@ def create_destination():
 
 
 def scan_destination_convert_mp3():
-    _i, _total_files = 0, len(source_directories)
+    _i, _i_total, _total_files = 0, 0, len(source_directories[1])
     for _file in source_directories[1]:
+        _i_total += 1
+        _progress = _i_total / _total_files
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
                           ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
@@ -53,7 +55,6 @@ def scan_destination_convert_mp3():
                     sleep(1)
                     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             _i += 1
-            _progress = _i / _total_files
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             if '-s' in arguments:
                 _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
