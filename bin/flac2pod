@@ -57,7 +57,7 @@ def scan_destination_convert_mp3():
             _i += 1
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             if '-s' in arguments:
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
                        f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s {_file_d}"
             else:
                 _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
