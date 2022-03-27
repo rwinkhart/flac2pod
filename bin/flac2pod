@@ -38,7 +38,7 @@ def create_destination():
 
 
 def scan_destination_convert_mp3():
-    _i = 0
+    _i, _total_files = 0, len(source_directories)
     for _file in source_directories[1]:
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
@@ -47,14 +47,14 @@ def scan_destination_convert_mp3():
                           .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&')\
                           .replace('`', '\\`').replace('$', '\\$') + '.mp3'
             _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
-            print(_active_processes)
             if _active_processes >= cpu_count():
                 while _active_processes >= cpu_count():
                     print(f"\nThere are already {cpu_count()} processes running...\n")
                     sleep(1)
                     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             _i += 1
-            print(f"\n\u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
+            _progress = _i / _total_files
+            print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             if '-s' in arguments:
                 _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
                        f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s {_file_d}"
