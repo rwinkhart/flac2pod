@@ -41,8 +41,9 @@ def scan_destination_convert():
     _i, _i_total, _total_files = 0, 0, len(source_directories[1])
     for _file in source_directories[1]:
         _i_total += 1
-        _progress = (_i_total / _total_files) * 100
-        if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file() and not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
+        _progress = round((_i_total / _total_files) * 100, 2)
+        if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file() and not \
+                Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
                           ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
             if '--mp3' in arguments:
