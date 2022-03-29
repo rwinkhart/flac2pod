@@ -37,17 +37,22 @@ def create_destination():
             .mkdir(0o700, parents=True, exist_ok=True)
 
 
-def scan_destination_convert_mp3():
+def scan_destination_convert():
     _i, _i_total, _total_files = 0, 0, len(source_directories[1])
     for _file in source_directories[1]:
         _i_total += 1
         _progress = (_i_total / _total_files) * 100
-        if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file():
+        if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file() and not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
                           ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
-            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
-                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&')\
-                          .replace('`', '\\`').replace('$', '\\$') + '.mp3'
+            if '--mp3' in arguments:
+                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
+                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&') \
+                              .replace('`', '\\`').replace('$', '\\$') + '.mp3'
+            else:
+                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
+                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&') \
+                              .replace('`', '\\`').replace('$', '\\$') + '.m4a'
             _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             if _active_processes >= cpu_count():
                 while _active_processes >= cpu_count():
@@ -56,12 +61,20 @@ def scan_destination_convert_mp3():
                     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             _i += 1
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
-            if '-s' in arguments:
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
-                       f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s --mp3 {_file_d}"
+            if '--mp3' in arguments:
+                if '-s' in arguments:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
+                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s --mp3 {_file_d}"
+                else:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
+                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f --mp3 {_file_d}"
             else:
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
-                       f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f --mp3 {_file_d}"
+                if '-s' in arguments:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -map_metadata 0 " \
+                           f"-aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null; rg2sc -f -s {_file_d}"
+                else:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -c:v copy -map_metadata 0" \
+                           f" -aac_pns 0 -movflags +faststart {_file_d} </dev/null; rg2sc -f {_file_d}"
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
@@ -85,4 +98,4 @@ if destination.endswith('/'):
 
 source_directories = scan_source()
 create_destination()
-scan_destination_convert_mp3()
+scan_destination_convert()
