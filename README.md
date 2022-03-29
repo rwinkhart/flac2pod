@@ -1,7 +1,7 @@
 # flac2pod
 Converts your existing FLAC library to be played on an iPod Classic.
 
-This script makes use of ffmpeg to convert your existing FLAC music library to AAC-256 or MP3-320 for easy iPod Classic use. It also takes advantage of "rg2sc" (https://github.com/rwinkhart/rg2sc) to convert any existing ReplayGain tags to Apple Sound Check tags that are compatible with Apple products.
+This script makes use of ffmpeg to convert your existing FLAC music library to AAC-256 or MP3-320 for easy iPod Classic use. It also takes advantage of "rg2sc" (https://github.com/rwinkhart/rg2sc) to convert any existing ReplayGain tags to Apple SoundCheck tags that are compatible with Apple products.
 
 # Usage
 Simply run...
