@@ -2,11 +2,12 @@
 
 # external modules
 
+from argparse import ArgumentParser
 from os import cpu_count, path, walk
 from pathlib import Path
-from sys import argv, exit as s_exit
-from time import sleep
 from subprocess import check_output, Popen
+from sys import exit as s_exit
+from time import sleep
 
 
 # utility functions
@@ -44,9 +45,9 @@ def scan_destination_convert():
         _progress = round((_i_total / _total_files) * 100, 2)
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file() and not \
                 Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
-            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace\
-                          ('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
-            if '--mp3' in arguments:
+            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
+                          .replace('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
+            if args.mp3:
                 _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
                               .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&') \
                               .replace('`', '\\`').replace('$', '\\$') + '.mp3'
@@ -62,15 +63,15 @@ def scan_destination_convert():
                     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             _i += 1
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
-            if '--mp3' in arguments:
-                if '-s' in arguments:
+            if args.mp3:
+                if args.strip:
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
                            f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s --mp3 {_file_d}"
                 else:
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
                            f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f --mp3 {_file_d}"
             else:
-                if '-s' in arguments:
+                if args.strip:
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -map_metadata 0 " \
                            f"-aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null; rg2sc -f -s {_file_d}"
                 else:
@@ -87,16 +88,30 @@ def scan_destination_convert():
     s_exit()
 
 
-# retrieve typed argument
-arguments = argv
+# argument parsing
+if __name__ == "__main__":
+    parser = ArgumentParser(description='Convert your existing FLAC library to be played on an iPod Classic.')
+    parser.add_argument('source_dir', nargs='+',
+                        help='directory tree containing music files - folder must contain library sorted into artists '
+                             'and albums')
+    parser.add_argument('destination_dir', nargs='+',
+                        help='destination parent directory for output - will be created if it does not already exist')
+    parser.add_argument('-s', '--strip', action='store_true',
+                        help='strip all TXXX, APIC, and covr tags from the output files')
+    parser.add_argument('--mp3', action='store_true',
+                        help='convert to MP3, as opposed to the default of AAC .M4A')
 
-source = input('Source parent directory: ')
-if source.endswith('/'):
-    source = source[:-1]
-destination = input('Destination parent directory: ')
-if destination.endswith('/'):
-    destination = destination[:-1]
+    args = parser.parse_args()
 
-source_directories = scan_source()
-create_destination()
-scan_destination_convert()
+    if args.source_dir[0].endswith('/'):
+        source = args.source_dir[0][:-1]
+    else:
+        source = args.source_dir[0]
+    if args.destination_dir[0].endswith('/'):
+        destination = args.destination_dir[0][:-1]
+    else:
+        destination = args.destination_dir[0]
+
+    source_directories = scan_source()
+    create_destination()
+    scan_destination_convert()
