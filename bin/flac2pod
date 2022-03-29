@@ -3,6 +3,7 @@
 # external modules
 
 from argparse import ArgumentParser
+from mutagen.flac import FLAC
 from os import cpu_count, path, walk
 from pathlib import Path
 from subprocess import check_output, Popen
@@ -71,12 +72,27 @@ def scan_destination_convert():
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
                            f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f --mp3 {_file_d}"
             else:
-                if args.strip:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -map_metadata 0 " \
-                           f"-aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null; rg2sc -f -s {_file_d}"
+                _audio = FLAC(f"{_file}.flac")
+                if _audio.get('replaygain_track_gain'):
+                    _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
+                elif _audio.get('REPLAYGAIN_TRACK_GAIN'):
+                    _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
                 else:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -c:v copy -map_metadata 0" \
-                           f" -aac_pns 0 -movflags +faststart {_file_d} </dev/null; rg2sc -f {_file_d}"
+                    _rggain = None
+                if _audio.get('replaygain_track_peak'):
+                    _rgpeak = float(_audio.get('replaygain_track_peak')[0])
+                elif _audio.get('REPLAYGAIN_TRACK_PEAK'):
+                    _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
+                else:
+                    _rgpeak = None
+                if args.strip:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -map_metadata 0 -metadata" \
+                           f" comment='FLAC2PODRG#{_rggain}#{_rgpeak}#' -aac_pns 0 -movflags +faststart -vn" \
+                           f" {_file_d} </dev/null; rg2sc -f -s {_file_d}"
+                else:
+                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -c:v copy -map_metadata" \
+                           f" 0 -metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#' -aac_pns 0 -movflags +faststart" \
+                           f" {_file_d} </dev/null; rg2sc -f {_file_d}"
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
