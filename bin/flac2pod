@@ -67,10 +67,10 @@ def scan_destination_convert():
             if args.mp3:
                 if args.strip:
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
-                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s --mp3 {_file_d}"
+                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s {_file_d}"
                 else:
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
-                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f --mp3 {_file_d}"
+                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f {_file_d}"
             else:
                 _audio = FLAC(f"{_file}.flac")
                 if _audio.get('replaygain_track_gain'):
