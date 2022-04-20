@@ -61,18 +61,32 @@ def scan_destination_convert():
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             # get relevant ReplayGain info
             _audio = FLAC(f"{_file}.flac")
-            if _audio.get('replaygain_track_gain'):
-                _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
-            elif _audio.get('REPLAYGAIN_TRACK_GAIN'):
-                _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
+            if args.albumgain:
+                if _audio.get('replaygain_album_gain'):
+                    _rggain = float(_audio.get('replaygain_album_gain')[0][:-3])
+                elif _audio.get('REPLAYGAIN_ALBUM_GAIN'):
+                    _rggain = float(_audio.get('REPLAYGAIN_ALBUM_GAIN')[0][:-3])
+                else:
+                    _rggain = None
+                if _audio.get('replaygain_album_peak'):
+                    _rgpeak = float(_audio.get('replaygain_album_peak')[0])
+                elif _audio.get('REPLAYGAIN_ALBUM_PEAK'):
+                    _rgpeak = float(_audio.get('REPLAYGAIN_ALBUM_PEAK')[0])
+                else:
+                    _rgpeak = None
             else:
-                _rggain = None
-            if _audio.get('replaygain_track_peak'):
-                _rgpeak = float(_audio.get('replaygain_track_peak')[0])
-            elif _audio.get('REPLAYGAIN_TRACK_PEAK'):
-                _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
-            else:
-                _rgpeak = None
+                if _audio.get('replaygain_track_gain'):
+                    _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
+                elif _audio.get('REPLAYGAIN_TRACK_GAIN'):
+                    _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
+                else:
+                    _rggain = None
+                if _audio.get('replaygain_track_peak'):
+                    _rgpeak = float(_audio.get('replaygain_track_peak')[0])
+                elif _audio.get('REPLAYGAIN_TRACK_PEAK'):
+                    _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
+                else:
+                    _rgpeak = None
             # determine ffmpeg arguments
             if args.bake:
                 _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
@@ -108,6 +122,8 @@ if __name__ == "__main__":
                         help='strip all TXXX, APIC, and covr tags from the output files')
     parser.add_argument('-b', '--bake', action='store_true',
                         help='bake (encode) ReplayGain values into the file instead of using SoundCheck tags')
+    parser.add_argument('--albumgain', action='store_true',
+                        help='read ReplayGain album gain instead of ReplayGain track gain')
     args = parser.parse_args()
 
     if args.source_dir[0].endswith('/'):
