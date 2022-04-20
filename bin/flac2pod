@@ -98,7 +98,9 @@ def scan_destination_convert():
             if _rggain is not None:
                 print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
             else:
-                print(f"\u001b[38;5;0;48;5;15mNo ReplayGain data found!\u001b[0m")
+                print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
+                if args.stopifnogain:
+                    s_exit()
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
@@ -120,8 +122,10 @@ if __name__ == "__main__":
                         help='destination parent directory for output - will be created if it does not already exist')
     parser.add_argument('-b', '--bake', action='store_true',
                         help='bake (encode) ReplayGain values into the file')
-    parser.add_argument('--albumgain', action='store_true',
+    parser.add_argument('-a', '--albumgain', action='store_true',
                         help='read ReplayGain album gain instead of ReplayGain track gain')
+    parser.add_argument('-x', '--stopifnogain', action='store_true',
+                        help='stop flac2pod if ReplayGain data cannot be found in a file')
     args = parser.parse_args()
 
     if args.source_dir[0].endswith('/'):
