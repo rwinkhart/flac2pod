@@ -48,14 +48,9 @@ def scan_destination_convert():
                 Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
                           .replace('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
-            if args.mp3:
-                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
-                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&') \
-                              .replace('`', '\\`').replace('$', '\\$') + '.mp3'
-            else:
-                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
-                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&') \
-                              .replace('`', '\\`').replace('$', '\\$') + '.m4a'
+            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
+                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&')\
+                          .replace('`', '\\`').replace('$', '\\$') + '.m4a'
             _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             if _active_processes >= cpu_count():
                 while _active_processes >= cpu_count():
@@ -64,49 +59,41 @@ def scan_destination_convert():
                     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             _i += 1
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
-            if args.mp3:
-                if args.strip:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -map 0:a -ab 320k -map_metadata 0" \
-                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f -s {_file_d}"
-                else:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
-                           f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f {_file_d}"
+            # get relevant ReplayGain info
+            _audio = FLAC(f"{_file}.flac")
+            if _audio.get('replaygain_track_gain'):
+                _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
+            elif _audio.get('REPLAYGAIN_TRACK_GAIN'):
+                _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
             else:
-                # get relevant ReplayGain info
-                _audio = FLAC(f"{_file}.flac")
-                if _audio.get('replaygain_track_gain'):
-                    _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
-                elif _audio.get('REPLAYGAIN_TRACK_GAIN'):
-                    _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
-                else:
-                    _rggain = None
-                if _audio.get('replaygain_track_peak'):
-                    _rgpeak = float(_audio.get('replaygain_track_peak')[0])
-                elif _audio.get('REPLAYGAIN_TRACK_PEAK'):
-                    _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
-                else:
-                    _rgpeak = None
-                # determine ffmpeg arguments
-                if args.strip and args.bake:
-                    _rg2sc_args = f"; rg2sc -S {_file_d}"
-                elif args.strip and not args.bake:
-                    _rg2sc_args = f"; rg2sc -f -s {_file_d}"
-                elif not args.strip and not args.bake:
-                    _rg2sc_args = f";rg2sc -f {_file_d}"
-                else:  # elif not args.strip and args.bake
-                    _rg2sc_args = ''
-                if args.bake:
-                    _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
-                else:
-                    _bake_args, _flac2pod_rg_tags = '', f"comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
-                if args.strip:
-                    _copy_video1, _copy_video2 = '', '-vn'
-                else:
-                    _copy_video1, _copy_video2 = '-c:v copy', ''
-                # generate the appropriate ffmpeg command
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_copy_video1} " \
-                       f"-map_metadata 0 -metadata {_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_copy_video2}" \
-                       f" {_file_d} </dev/null{_rg2sc_args}"
+                _rggain = None
+            if _audio.get('replaygain_track_peak'):
+                _rgpeak = float(_audio.get('replaygain_track_peak')[0])
+            elif _audio.get('REPLAYGAIN_TRACK_PEAK'):
+                _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
+            else:
+                _rgpeak = None
+            # determine ffmpeg arguments
+            if args.strip and args.bake:
+                _rg2sc_args = f"; rg2sc -S {_file_d}"
+            elif args.strip and not args.bake:
+                _rg2sc_args = f"; rg2sc -f -s {_file_d}"
+            elif not args.strip and not args.bake:
+                _rg2sc_args = f";rg2sc -f {_file_d}"
+            else:  # elif not args.strip and args.bake
+                _rg2sc_args = ''
+            if args.bake:
+                _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
+            else:
+                _bake_args, _flac2pod_rg_tags = '', f"comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
+            if args.strip:
+                _copy_video1, _copy_video2 = '', '-vn'
+            else:
+                _copy_video1, _copy_video2 = '-c:v copy', ''
+            # generate the appropriate ffmpeg command
+            _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_copy_video1} " \
+                   f"-map_metadata 0 -metadata {_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_copy_video2}" \
+                   f" {_file_d} </dev/null{_rg2sc_args}"
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
@@ -130,9 +117,6 @@ if __name__ == "__main__":
                         help='strip all TXXX, APIC, and covr tags from the output files')
     parser.add_argument('-b', '--bake', action='store_true',
                         help='bake (encode) ReplayGain values into the file instead of using SoundCheck tags')
-    parser.add_argument('--mp3', action='store_true',
-                        help='convert to MP3, as opposed to the default of AAC .M4A')
-
     args = parser.parse_args()
 
     if args.source_dir[0].endswith('/'):
