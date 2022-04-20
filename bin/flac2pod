@@ -118,10 +118,8 @@ if __name__ == "__main__":
                              'and albums')
     parser.add_argument('destination_dir', nargs='+',
                         help='destination parent directory for output - will be created if it does not already exist')
-    parser.add_argument('-s', '--strip', action='store_true',
-                        help='strip all TXXX, APIC, and covr tags from the output files')
     parser.add_argument('-b', '--bake', action='store_true',
-                        help='bake (encode) ReplayGain values into the file instead of using SoundCheck tags')
+                        help='bake (encode) ReplayGain values into the file')
     parser.add_argument('--albumgain', action='store_true',
                         help='read ReplayGain album gain instead of ReplayGain track gain')
     args = parser.parse_args()
