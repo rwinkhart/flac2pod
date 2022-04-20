@@ -85,15 +85,14 @@ def scan_destination_convert():
             if args.bake:
                 _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
             else:
-                _bake_args, _flac2pod_rg_tags = '', f"comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
-            if args.strip:
-                _copy_video1, _copy_video2 = '', '-vn'
-            else:
-                _copy_video1, _copy_video2 = '-c:v copy', ''
+                _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
             # generate the appropriate ffmpeg command
-            _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_copy_video1} " \
-                   f"-map_metadata 0 -metadata {_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_copy_video2}" \
-                   f" {_file_d} </dev/null{_rg2sc_args}"
+            _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_bake_args} -map_metadata 0 " \
+                   f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null{_rg2sc_args}"
+            if _rggain is not None:
+                print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
+            else:
+                print(f"\u001b[38;5;0;48;5;15mNo ReplayGain data found!\u001b[0m")
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
