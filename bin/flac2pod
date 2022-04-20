@@ -74,21 +74,13 @@ def scan_destination_convert():
             else:
                 _rgpeak = None
             # determine ffmpeg arguments
-            if args.strip and args.bake:
-                _rg2sc_args = f"; rg2sc -S {_file_d}"
-            elif args.strip and not args.bake:
-                _rg2sc_args = f"; rg2sc -f -s {_file_d}"
-            elif not args.strip and not args.bake:
-                _rg2sc_args = f";rg2sc -f {_file_d}"
-            else:  # elif not args.strip and args.bake
-                _rg2sc_args = ''
             if args.bake:
                 _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
             else:
                 _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
             # generate the appropriate ffmpeg command
             _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_bake_args} -map_metadata 0 " \
-                   f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null{_rg2sc_args}"
+                   f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null"
             if _rggain is not None:
                 print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
             else:
