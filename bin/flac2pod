@@ -72,6 +72,7 @@ def scan_destination_convert():
                     _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:v copy -ab 320k -map_metadata 0" \
                            f" -id3v2_version 3 {_file_d} </dev/null; rg2sc -f {_file_d}"
             else:
+                # get relevant ReplayGain info
                 _audio = FLAC(f"{_file}.flac")
                 if _audio.get('replaygain_track_gain'):
                     _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
@@ -85,14 +86,27 @@ def scan_destination_convert():
                     _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
                 else:
                     _rgpeak = None
-                if args.strip:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -map_metadata 0 -metadata" \
-                           f" comment='FLAC2PODRG#{_rggain}#{_rgpeak}#' -aac_pns 0 -movflags +faststart -vn" \
-                           f" {_file_d} </dev/null; rg2sc -f -s {_file_d}"
+                # determine ffmpeg arguments
+                if args.strip and args.bake:
+                    _rg2sc_args = f"; rg2sc -S {_file_d}"
+                elif args.strip and not args.bake:
+                    _rg2sc_args = f"; rg2sc -f -s {_file_d}"
+                elif not args.strip and not args.bake:
+                    _rg2sc_args = f";rg2sc -f {_file_d}"
+                else:  # elif not args.strip and args.bake
+                    _rg2sc_args = ''
+                if args.bake:
+                    _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
                 else:
-                    _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k -c:v copy -map_metadata" \
-                           f" 0 -metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#' -aac_pns 0 -movflags +faststart" \
-                           f" {_file_d} </dev/null; rg2sc -f {_file_d}"
+                    _bake_args, _flac2pod_rg_tags = '', f"comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
+                if args.strip:
+                    _copy_video1, _copy_video2 = '', '-vn'
+                else:
+                    _copy_video1, _copy_video2 = '-c:v copy', ''
+                # generate the appropriate ffmpeg command
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_copy_video1} " \
+                       f"-map_metadata 0 -metadata {_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_copy_video2}" \
+                       f" {_file_d} </dev/null{_rg2sc_args}"
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
@@ -114,6 +128,8 @@ if __name__ == "__main__":
                         help='destination parent directory for output - will be created if it does not already exist')
     parser.add_argument('-s', '--strip', action='store_true',
                         help='strip all TXXX, APIC, and covr tags from the output files')
+    parser.add_argument('-b', '--bake', action='store_true',
+                        help='bake (encode) ReplayGain values into the file instead of using SoundCheck tags')
     parser.add_argument('--mp3', action='store_true',
                         help='convert to MP3, as opposed to the default of AAC .M4A')
 
