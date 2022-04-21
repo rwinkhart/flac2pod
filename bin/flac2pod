@@ -102,7 +102,7 @@ def scan_destination_convert():
             else:
                 print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
                 if args.stopifnogain:
-                    s_exit()
+                    s_exit(1)
             Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
@@ -111,7 +111,7 @@ def scan_destination_convert():
         _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     sleep(1)
     print('\niPod conversion complete!\n')
-    s_exit()
+    s_exit(0)
 
 
 # argument parsing
