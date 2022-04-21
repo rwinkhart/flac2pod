@@ -42,8 +42,8 @@ if __name__ == "__main__":
             output = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
             block = output.communicate()[0].strip()  # blocks the program from proceeding until stdout is given
             if output.returncode == 1:
-                if block.decode('utf-8').__contains__('sample rate'):
-                    print('Sample rate error, scanning tracks as individuals...')
+                if block.decode('utf-8').__contains__('sample') or block.decode('utf-8').__contains__('resolution of'):
+                    print('Resolution/Sample Rate mismatch, scanning tracks as individuals...')
                     for song in listdir(album):
                         print(f"[{album}/{song}] Adding ReplayGain data...")
                         std_song = song.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)')\
