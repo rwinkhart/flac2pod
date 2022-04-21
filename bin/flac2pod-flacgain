@@ -1,0 +1,64 @@
+#!/bin/python3
+
+from argparse import ArgumentParser
+from flac2pod import scan_source
+from mutagen.flac import FLAC
+from os import listdir, system
+from subprocess import PIPE, Popen, STDOUT
+from sys import exit as s_exit
+
+# argument parsing
+if __name__ == "__main__":
+    parser = ArgumentParser(description='Quickly tag your FLAC library with ReplayGain data using metaflac.')
+    parser.add_argument('source_dir', nargs='+',
+                        help='directory tree containing music files - folder must contain library sorted into artists '
+                             'and albums')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='overwrite existing ReplayGain data')
+    args = parser.parse_args()
+
+    if args.source_dir[0].endswith('/'):
+        source = args.source_dir[0][:-1]
+    else:
+        source = args.source_dir[0]
+
+    source_directories = scan_source(source)
+
+    gain = 1
+    for album in sorted(source_directories[0]):
+        std_album = album.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)') \
+            .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
+        for song in listdir(album):
+            audio = FLAC(f"{album}/{song}")
+            if audio.get('replaygain_track_gain') or audio.get('REPLAYGAIN_TRACK_GAIN'):
+                gain = 1
+            else:
+                gain = 0
+                break
+        if args.force or gain == 0:
+            print(f"[{album}/*] Adding ReplayGain data...")
+            system(f"metaflac --remove-replay-gain {std_album}/*")
+            command = f"metaflac --add-replay-gain {std_album}/*"
+            output = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+            block = output.communicate()[0].strip()  # blocks the program from proceeding until stdout is given
+            if output.returncode == 1:
+                if block.decode('utf-8').__contains__('sample rate'):
+                    print('Sample rate error, scanning tracks as individuals...')
+                    for song in listdir(album):
+                        print(f"[{album}/{song}] Adding ReplayGain data...")
+                        std_song = song.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)')\
+                            .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
+                        command = f"metaflac --add-replay-gain {std_album}/{std_song}"
+                        output = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+                        block = output.communicate()[0].strip()
+                        if output.returncode == 1:
+                            print('There was an error processing your files.')
+                            print(f"Return Code: [{str(output.returncode)}] {block.decode('utf-8')}")
+                            s_exit(1)
+                else:
+                    print('There was an error processing your files.')
+                    print(f"Return Code: [{str(output.returncode)}] {block.decode('utf-8')}")
+                    s_exit(1)
+
+        else:
+            print(f"[{album}/*] ReplayGain data is already present.")

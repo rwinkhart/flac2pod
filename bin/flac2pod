@@ -13,11 +13,11 @@ from time import sleep
 
 # utility functions
 
-def scan_source():
+def scan_source(_source):
     _artist_dirs, _album_dirs, _full_paths = [], [], []
-    for _root, _directories, _files in walk(path.expanduser(source)):
+    for _root, _directories, _files in walk(path.expanduser(_source)):
         for _dir in sorted(_directories):
-            if not _root.endswith(path.expanduser(source)):
+            if not _root.endswith(path.expanduser(_source)):
                 _artist_dirs.append(_root)
     _artist_dirs = list(set(_artist_dirs))
     for _artist in sorted(_artist_dirs):
@@ -137,6 +137,6 @@ if __name__ == "__main__":
     else:
         destination = args.destination_dir[0]
 
-    source_directories = scan_source()
+    source_directories = scan_source(source)
     create_destination()
     scan_destination_convert()
