@@ -1,6 +1,9 @@
 #!/bin/python3
 
 from argparse import ArgumentParser
+
+import mutagen.flac
+
 from flac2pod import scan_source
 from mutagen.flac import FLAC
 from os import listdir, system
@@ -29,13 +32,17 @@ if __name__ == "__main__":
         std_album = album.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)') \
             .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
         for song in listdir(album):
-            audio = FLAC(f"{album}/{song}")
-            if audio.get('replaygain_track_gain') or audio.get('REPLAYGAIN_TRACK_GAIN'):
-                gain = 1
-            else:
-                gain = 0
-                break
-        if args.force or gain == 0:
+            try:
+                audio = FLAC(f"{album}/{song}")
+                if audio.get('replaygain_track_gain') or audio.get('REPLAYGAIN_TRACK_GAIN'):
+                    gain = 1
+                else:
+                    gain = 0
+                    break
+            except mutagen.flac.FLACNoHeaderError:
+                print(f"[{album}/*] Contains non-FLAC files, skipping album...")
+                gain = 2
+        if gain != 2 and (args.force or gain == 0):
             print(f"[{album}/*] Adding ReplayGain data...")
             system(f"metaflac --remove-replay-gain {std_album}/*")
             command = f"metaflac --add-replay-gain {std_album}/*"
