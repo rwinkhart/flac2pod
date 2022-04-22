@@ -1,11 +1,8 @@
 #!/bin/python3
 
 from argparse import ArgumentParser
-
-import mutagen.flac
-
 from flac2pod import scan_source
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, FLACNoHeaderError
 from os import listdir, system
 from subprocess import PIPE, Popen, STDOUT
 from sys import exit as s_exit
@@ -39,7 +36,7 @@ if __name__ == "__main__":
                 else:
                     gain = 0
                     break
-            except mutagen.flac.FLACNoHeaderError:
+            except FLACNoHeaderError:
                 print(f"[{album}/*] Contains non-FLAC files, skipping album...")
                 gain = 2
         if gain != 2 and (args.force or gain == 0):
