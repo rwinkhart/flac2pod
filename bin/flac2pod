@@ -3,7 +3,7 @@
 # external modules
 
 from argparse import ArgumentParser
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, FLACNoHeaderError
 from os import cpu_count, path, walk
 from pathlib import Path
 from subprocess import check_output, Popen
@@ -61,33 +61,37 @@ def scan_destination_convert():
             _i += 1
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             # get relevant ReplayGain info
-            _audio = FLAC(f"{_file}.flac")
-            if args.albumgain:
-                if _audio.get('REPLAYGAIN_ALBUM_GAIN'):
-                    _rggain = float(_audio.get('REPLAYGAIN_ALBUM_GAIN')[0][:-3])
-                elif _audio.get('replaygain_album_gain'):
-                    _rggain = float(_audio.get('replaygain_album_gain')[0][:-3])
+            try:
+                _audio = FLAC(f"{_file}.flac")
+                if args.albumgain:
+                    if _audio.get('REPLAYGAIN_ALBUM_GAIN'):
+                        _rggain = float(_audio.get('REPLAYGAIN_ALBUM_GAIN')[0][:-3])
+                    elif _audio.get('replaygain_album_gain'):
+                        _rggain = float(_audio.get('replaygain_album_gain')[0][:-3])
+                    else:
+                        _rggain = None
+                    if _audio.get('REPLAYGAIN_ALBUM_PEAK'):
+                        _rgpeak = float(_audio.get('REPLAYGAIN_ALBUM_PEAK')[0])
+                    elif _audio.get('replaygain_album_peak'):
+                        _rgpeak = float(_audio.get('replaygain_album_peak')[0])
+                    else:
+                        _rgpeak = None
                 else:
-                    _rggain = None
-                if _audio.get('REPLAYGAIN_ALBUM_PEAK'):
-                    _rgpeak = float(_audio.get('REPLAYGAIN_ALBUM_PEAK')[0])
-                elif _audio.get('replaygain_album_peak'):
-                    _rgpeak = float(_audio.get('replaygain_album_peak')[0])
-                else:
-                    _rgpeak = None
-            else:
-                if _audio.get('REPLAYGAIN_TRACK_GAIN'):
-                    _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
-                elif _audio.get('replaygain_track_gain'):
-                    _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
-                else:
-                    _rggain = None
-                if _audio.get('REPLAYGAIN_TRACK_PEAK'):
-                    _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
-                elif _audio.get('replaygain_track_peak'):
-                    _rgpeak = float(_audio.get('replaygain_track_peak')[0])
-                else:
-                    _rgpeak = None
+                    if _audio.get('REPLAYGAIN_TRACK_GAIN'):
+                        _rggain = float(_audio.get('REPLAYGAIN_TRACK_GAIN')[0][:-3])
+                    elif _audio.get('replaygain_track_gain'):
+                        _rggain = float(_audio.get('replaygain_track_gain')[0][:-3])
+                    else:
+                        _rggain = None
+                    if _audio.get('REPLAYGAIN_TRACK_PEAK'):
+                        _rgpeak = float(_audio.get('REPLAYGAIN_TRACK_PEAK')[0])
+                    elif _audio.get('replaygain_track_peak'):
+                        _rgpeak = float(_audio.get('replaygain_track_peak')[0])
+                    else:
+                        _rgpeak = None
+            except FLACNoHeaderError:
+                print(f"[{_file_s}] Not a FLAC file, skipping...")
+                _rggain, _rgpeak = None, None
             # determine ffmpeg arguments
             if args.bake and _rggain is not None:
                 _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
