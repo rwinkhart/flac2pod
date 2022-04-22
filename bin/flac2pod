@@ -47,10 +47,11 @@ def scan_destination_convert():
         if not Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.mp3").is_file() and not \
                 Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
-                          .replace('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.flac'
+                          .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`')\
+                          .replace('$', '\\$') + '.flac'
             _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
-                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace('&', '\\&')\
-                          .replace('`', '\\`').replace('$', '\\$') + '.m4a'
+                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]')\
+                          .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.m4a'
             _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             if _active_processes >= cpu_count():
                 while _active_processes >= cpu_count():

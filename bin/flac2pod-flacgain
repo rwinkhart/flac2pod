@@ -29,8 +29,8 @@ if __name__ == "__main__":
 
     gain = 1
     for album in sorted(source_directories[0]):
-        std_album = album.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)') \
-            .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
+        std_album = album.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
+            .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
         for song in listdir(album):
             try:
                 audio = FLAC(f"{album}/{song}")
