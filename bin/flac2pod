@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 from mutagen.flac import FLAC, FLACNoHeaderError
 from os import cpu_count, path, walk
 from pathlib import Path
-from shutil import move
+from shutil import copy
 from subprocess import check_output, Popen
 from sys import exit as s_exit
 from time import sleep
@@ -91,7 +91,7 @@ def scan_destination_convert():
                         _rgpeak = None
             except FLACNoHeaderError:
                 print(f"[{_file}] Not a FLAC file, copying...")
-                move(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
+                copy(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
                 _rggain, _rgpeak = None, None
             # determine ffmpeg arguments
             if args.bake and _rggain is not None:
