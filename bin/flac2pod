@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from mutagen.flac import FLAC, FLACNoHeaderError
 from os import cpu_count, path, walk
 from pathlib import Path
+from shutil import move
 from subprocess import check_output, Popen
 from sys import exit as s_exit
 from time import sleep
@@ -29,7 +30,7 @@ def scan_source(_source):
         for _root, _directories, _files in walk(path.expanduser(_album)):
             for _filename in _files:
                 if _filename.endswith('.flac'):
-                    _full_paths.append(f"{_album}/{_filename[:-5]}")
+                    _full_paths.append(f"{_album}/{_filename}")
     return _album_dirs, _full_paths
 
 
@@ -48,10 +49,10 @@ def scan_destination_convert():
                 Path(f"{_file.replace(path.expanduser(source), path.expanduser(destination))}.m4a").is_file():
             _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
                           .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`')\
-                          .replace('$', '\\$') + '.flac'
+                          .replace('$', '\\$')
             _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
                           .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]')\
-                          .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$') + '.m4a'
+                          .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')[:-5] + '.m4a'
             _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
             if _active_processes >= cpu_count():
                 while _active_processes >= cpu_count():
@@ -62,7 +63,7 @@ def scan_destination_convert():
             print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
             # get relevant ReplayGain info
             try:
-                _audio = FLAC(f"{_file}.flac")
+                _audio = FLAC(f"{_file}")
                 if args.albumgain:
                     if _audio.get('REPLAYGAIN_ALBUM_GAIN'):
                         _rggain = float(_audio.get('REPLAYGAIN_ALBUM_GAIN')[0][:-3])
@@ -90,7 +91,8 @@ def scan_destination_convert():
                     else:
                         _rgpeak = None
             except FLACNoHeaderError:
-                print(f"[{_file_s}] Not a FLAC file, skipping...")
+                print(f"[{_file}] Not a FLAC file, copying...")
+                move(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
                 _rggain, _rgpeak = None, None
             # determine ffmpeg arguments
             if args.bake and _rggain is not None:
