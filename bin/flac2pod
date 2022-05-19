@@ -3,7 +3,7 @@
 # external modules
 
 from argparse import ArgumentParser
-from mutagen.flac import FLAC, FLACNoHeaderError
+from mutagen.flac import FLAC
 from os import cpu_count, path, walk
 from pathlib import Path
 from shutil import copy
@@ -29,7 +29,8 @@ def scan_source(_source):
     for _album in sorted(_album_dirs):
         for _root, _directories, _files in walk(path.expanduser(_album)):
             for _filename in _files:
-                if _filename.endswith('.flac'):
+                if _filename.endswith('.flac') or _filename.endswith('.mp3') or _filename.endswith('.mp4') \
+                        or _filename.endswith('.m4a'):
                     _full_paths.append(f"{_album}/{_filename}")
     return _album_dirs, _full_paths
 
@@ -45,23 +46,28 @@ def scan_destination_convert():
     for _file in source_directories[1]:
         _i_total += 1
         _progress = round((_i_total / _total_files) * 100, 2)
-        if not Path(f"{(_file.replace(path.expanduser(source), path.expanduser(destination)))[:-5]}.m4a").is_file():
-            _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(')\
-                          .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`')\
-                          .replace('$', '\\$')
-            _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ')\
-                          .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]')\
-                          .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')[:-5] + '.m4a'
-            _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
-            if _active_processes >= cpu_count():
-                while _active_processes >= cpu_count():
-                    print(f"\nThere are already {cpu_count()} processes running...\n")
-                    sleep(1)
-                    _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
-            _i += 1
-            print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
-            # get relevant ReplayGain info
-            try:
+        if not Path(f"{(_file.replace(path.expanduser(source), path.expanduser(destination)))[:-5]}.m4a").is_file()\
+                and not Path(f"{(_file.replace(path.expanduser(source), path.expanduser(destination)))}").is_file():
+            if not _file.endswith('.flac'):
+                print(f"[{_file}] Not a FLAC file, copying...")
+                copy(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
+            else:
+                _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(') \
+                    .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`') \
+                    .replace('$', '\\$')
+                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
+                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]') \
+                              .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')[
+                          :-5] + '.m4a'
+                _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+                if _active_processes >= cpu_count():
+                    while _active_processes >= cpu_count():
+                        print(f"\nThere are already {cpu_count()} processes running...\n")
+                        sleep(1)
+                        _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+                _i += 1
+                print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
+                # get relevant ReplayGain info
                 _audio = FLAC(f"{_file}")
                 if args.albumgain:
                     if _audio.get('REPLAYGAIN_ALBUM_GAIN'):
@@ -89,27 +95,23 @@ def scan_destination_convert():
                         _rgpeak = float(_audio.get('replaygain_track_peak')[0])
                     else:
                         _rgpeak = None
-            except FLACNoHeaderError:
-                print(f"[{_file}] Not a FLAC file, copying...")
-                copy(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
-                _rggain, _rgpeak = None, None
-            # determine ffmpeg arguments
-            if args.bake and _rggain is not None:
-                _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
-            elif _rggain is not None and _rgpeak is not None:
-                _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
-            else:
-                _bake_args, _flac2pod_rg_tags = '', ''
-            # generate the appropriate ffmpeg command
-            _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_bake_args} -map_metadata 0 " \
-                   f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null"
-            if _rggain is not None:
-                print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
-            else:
-                print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
-                if args.stopifnogain:
-                    s_exit(1)
-            Popen(_cmd, shell=True)
+                # determine ffmpeg arguments
+                if args.bake and _rggain is not None:
+                    _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
+                elif _rggain is not None and _rgpeak is not None:
+                    _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
+                else:
+                    _bake_args, _flac2pod_rg_tags = '', ''
+                # generate the appropriate ffmpeg command
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_bake_args} -map_metadata 0 " \
+                       f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null"
+                if _rggain is not None:
+                    print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
+                else:
+                    print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
+                    if args.stopifnogain:
+                        s_exit(1)
+                Popen(_cmd, shell=True)
     _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
     while _active_processes != 0:
         print('\nPlease wait for the remaining conversions to complete...\n')
