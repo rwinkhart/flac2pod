@@ -26,8 +26,6 @@ source_dir -> artist dir -> album dir -> FLAC files
 
 # Installation
 
-flac2pod is available in the AUR as "flac2pod". If installing on a non-Arch-based distribution, follow the manual installation instructions:
+flac2pod is available in the AUR as "flac2pod".
 
-- copy the contents of https://github.com/rwinkhart/flac2pod/blob/master/bin/ to your /usr/bin/
-- install flac, python-mutagen, ffmpeg, and screen
-- start converting
+If installing on a non-Arch-based distribution, a generic package is available on the releases page.
