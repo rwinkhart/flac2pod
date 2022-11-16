@@ -1,10 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 from argparse import ArgumentParser
 from flac2pod import scan_source
 from mutagen.flac import FLAC, FLACNoHeaderError
 from os import listdir, system
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import PIPE, run
 from sys import exit as s_exit
 
 # argument parsing
@@ -42,26 +42,23 @@ if __name__ == "__main__":
         if gain != 2 and (args.force or gain == 0):
             print(f"[{album}/*] Adding ReplayGain data...")
             system(f"metaflac --remove-replay-gain {std_album}/*")
-            command = f"metaflac --add-replay-gain {std_album}/*"
-            output = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-            block = output.communicate()[0].strip()  # blocks the program from proceeding until stdout is given
+            output = run(f"metaflac --add-replay-gain {std_album}/*", shell=True, stdout=PIPE, text=True)
             if output.returncode == 1:
-                if block.decode('utf-8').__contains__('sample') or block.decode('utf-8').__contains__('resolution of'):
+                if output.stdout.__contains__('sample') or output.stdout.__contains__('resolution of'):
                     print('Resolution/Sample Rate mismatch, scanning tracks as individuals...')
                     for song in listdir(album):
                         print(f"[{album}/{song}] Adding ReplayGain data...")
                         std_song = song.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)')\
                             .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
-                        command = f"metaflac --add-replay-gain {std_album}/{std_song}"
-                        output = Popen(command, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-                        block = output.communicate()[0].strip()
+                        output = run(f"metaflac --add-replay-gain {std_album}/{std_song}", shell=True, stdout=PIPE,
+                                     text=True)
                         if output.returncode == 1:
                             print('There was an error processing your files.')
-                            print(f"Return Code: [{str(output.returncode)}] {block.decode('utf-8')}")
+                            print(f"Return Code: [{str(output.returncode)}] {output.stdout}")
                             s_exit(1)
                 else:
                     print('There was an error processing your files.')
-                    print(f"Return Code: [{str(output.returncode)}] {block.decode('utf-8')}")
+                    print(f"Return Code: [{str(output.returncode)}] {output.stdout}")
                     s_exit(1)
 
         else:
