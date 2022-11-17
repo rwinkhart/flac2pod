@@ -16,7 +16,7 @@ fi
 
 # generic packaging
 echo -e '\npackaging as generic...\n'
-mkdir -p output/generictemp/usr/lib/flac2pod
+mkdir -p output/generictemp/usr/{bin,lib/flac2pod}
 cp -r lib/. output/generictemp/usr/lib/flac2pod/
 ln -s /usr/lib/flac2pod/flac2pod.py output/generictemp/usr/bin/flac2pod
 ln -s /usr/lib/flac2pod/flac2pod-flacgain.py output/generictemp/usr/bin/flac2pod-flacgain
