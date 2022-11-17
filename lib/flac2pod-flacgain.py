@@ -42,23 +42,24 @@ if __name__ == "__main__":
         if gain != 2 and (args.force or gain == 0):
             print(f"[{album}/*] Adding ReplayGain data...")
             system(f"metaflac --remove-replay-gain {std_album}/*")
-            output = run(f"metaflac --add-replay-gain {std_album}/*", shell=True, stdout=PIPE, text=True)
+            output = run(f"metaflac --add-replay-gain {std_album}/*", shell=True, stderr=PIPE, text=True)
             if output.returncode == 1:
-                if output.stdout.__contains__('sample') or output.stdout.__contains__('resolution of'):
-                    print('Resolution/Sample Rate mismatch, scanning tracks as individuals...')
+                if output.stderr.__contains__('sample') or output.stderr.__contains__('resolution of') or output.\
+                        stderr.__contains__('does not match'):
+                    print('Resolution/Sample Rate/Channel mismatch, scanning tracks as individuals...')
                     for song in listdir(album):
                         print(f"[{album}/{song}] Adding ReplayGain data...")
                         std_song = song.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)')\
                             .replace('(', '\\(').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')
-                        output = run(f"metaflac --add-replay-gain {std_album}/{std_song}", shell=True, stdout=PIPE,
+                        output = run(f"metaflac --add-replay-gain {std_album}/{std_song}", shell=True, stderr=PIPE,
                                      text=True)
                         if output.returncode == 1:
                             print('There was an error processing your files.')
-                            print(f"Return Code: [{str(output.returncode)}] {output.stdout}")
+                            print(f"Return Code: [{str(output.returncode)}] {output.stderr}")
                             s_exit(1)
                 else:
                     print('There was an error processing your files.')
-                    print(f"Return Code: [{str(output.returncode)}] {output.stdout}")
+                    print(f"Return Code: [{str(output.returncode)}] {output.stderr}")
                     s_exit(1)
 
         else:
