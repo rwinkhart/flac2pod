@@ -102,9 +102,13 @@ def scan_destination_convert():
                     _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
                 else:
                     _bake_args, _flac2pod_rg_tags = '', ''
+                if args.preserve:
+                    _art_args = '-c:v copy -map_metadata 0:g'
+                else:
+                    _art_args = '-vn'
                 # generate the appropriate ffmpeg command
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} -c:a aac -ab 256k {_bake_args} -map_metadata 0 " \
-                       f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart -vn {_file_d} </dev/null"
+                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} {_art_args} -c:a aac -b:a 256k {_bake_args} " \
+                       f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_file_d} </dev/null"
                 if _rggain is not None:
                     print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
                 else:
@@ -131,11 +135,13 @@ if __name__ == "__main__":
     parser.add_argument('destination_dir', nargs='+',
                         help='destination parent directory for output - will be created if it does not already exist')
     parser.add_argument('-b', '--bake', action='store_true',
-                        help='bake (encode) ReplayGain values into the file')
+                        help='bake (encode) ReplayGain values into output files')
     parser.add_argument('-a', '--albumgain', action='store_true',
                         help='read ReplayGain album gain instead of ReplayGain track gain')
     parser.add_argument('-x', '--stopifnogain', action='store_true',
                         help='stop flac2pod if ReplayGain data cannot be found in a file')
+    parser.add_argument('-p', '--preserve', action='store_true',
+                        help='copy album art from input files')
     args = parser.parse_args()
 
     if args.source_dir[0].endswith('/'):
