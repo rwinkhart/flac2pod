@@ -63,5 +63,3 @@ if __name__ == "__main__":
 
         else:
             print(f"[{album}/*] ReplayGain data is already present.")
-
-    s_exit(0)

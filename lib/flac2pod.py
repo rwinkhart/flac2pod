@@ -156,5 +156,3 @@ if __name__ == "__main__":
     source_directories = scan_source(source)
     create_destination()
     scan_destination_convert()
-
-    s_exit(0)
