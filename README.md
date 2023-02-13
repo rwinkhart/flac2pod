@@ -18,7 +18,11 @@ flac2pod --help
 ```
 flac2pod-flacgain <source_dir>
 ```
-...to tag your FLAC library with ReplayGain data.
+...to tag your FLAC library with ReplayGain data, or run...
+```
+flac2pod-artconvert <source_dir>
+```
+...to convert embedded PNGs (in MP4/M4A files) to iPod-ready JPEGs.
 
 In order for flac2pod to function, your source_dir must be structured as follows:
 
