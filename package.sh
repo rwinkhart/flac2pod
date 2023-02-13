@@ -19,6 +19,7 @@ echo -e '\npackaging as generic...\n'
 mkdir -p output/generictemp/usr/{bin,lib/flac2pod}
 cp -r lib/. output/generictemp/usr/lib/flac2pod/
 ln -s /usr/lib/flac2pod/flac2pod.py output/generictemp/usr/bin/flac2pod
+ln -s /usr/lib/flac2pod/flac2pod-artconvert.py output/generictemp/usr/bin/flac2pod-artconvert
 ln -s /usr/lib/flac2pod/flac2pod-flacgain.py output/generictemp/usr/bin/flac2pod-flacgain
 cp -r share output/generictemp/usr/
 tar -C output/generictemp -cvJf output/flac2pod-"$version".tar.xz usr/
@@ -37,7 +38,7 @@ pkgdesc='Converts your FLAC library to be iPod-ready'
 url='https://github.com/rwinkhart/flac2pod'
 arch=('any')
 license=('GPL2')
-depends=(ffmpeg flac python python-mutagen screen)
+depends=(ffmpeg flac python python-mutagen python-pillow screen)
 source=(\""$source"\")
 sha512sums=('"$sha512"')
 

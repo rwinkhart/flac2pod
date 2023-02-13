@@ -7,7 +7,6 @@ from os import listdir, system
 from subprocess import PIPE, run
 from sys import exit as s_exit
 
-# argument parsing
 if __name__ == "__main__":
     parser = ArgumentParser(description='Quickly tag your FLAC library with ReplayGain data using metaflac.')
     parser.add_argument('source_dir', nargs='+',
