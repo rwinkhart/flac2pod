@@ -8,7 +8,8 @@ from os import listdir
 from PIL import Image
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description='Convert embedded album art in MP4/M4A files to iPod-compatible JPEGs.')
+    parser = ArgumentParser(description='Convert embedded album art in MP4/M4A files from PNGs to iPod-compatible '
+                                        'JPEGs.')
     parser.add_argument('source_dir', nargs='+',
                         help='directory tree containing music files - folder must contain library sorted into artists '
                              'and albums')
@@ -29,6 +30,7 @@ if __name__ == "__main__":
             if "covr" not in audio.tags:
                 continue
             cover = audio.tags["covr"][0]
+            print(f"[{album}/{song}] Converting...")
             open("/tmp/cover.png", "wb").write(cover)
             image = Image.open("/tmp/cover.png")
             image.thumbnail((300, 300))
