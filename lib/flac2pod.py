@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# external modules
-
 from argparse import ArgumentParser
 from mutagen.flac import FLAC
 from os import cpu_count, path, walk
@@ -29,11 +27,10 @@ def scan_source(_source):
     for _album in sorted(_album_dirs):
         for _root, _directories, _files in walk(path.expanduser(_album)):
             for _filename in _files:
-                if _filename.endswith('.flac') or _filename.endswith('.mp3') or _filename.endswith('.mp4') \
-                        or _filename.endswith('.m4a'):
+                if _filename.lower().endswith('.flac') or _filename.lower().endswith('.mp3') or \
+                _filename.lower().endswith('.mp4') or _filename.lower().endswith('.m4a'):
                     _full_paths.append(f"{_album}/{_filename}")
     return _album_dirs, _full_paths
-
 
 def create_destination():
     for _dir in source_directories[0]:
@@ -48,7 +45,7 @@ def scan_destination_convert():
         _progress = round((_i_total / _total_files) * 100, 2)
         if not Path(f"{(_file.replace(path.expanduser(source), path.expanduser(destination)))[:-5]}.m4a").is_file()\
                 and not Path(f"{(_file.replace(path.expanduser(source), path.expanduser(destination)))}").is_file():
-            if not _file.endswith('.flac'):
+            if not _file.lower().endswith('.flac'):
                 print(f"[{_file}] Not a FLAC file, copying...")
                 copy(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
             else:
