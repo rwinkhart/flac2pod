@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
+from posixpath import join
 from mutagen.flac import FLAC
 from os import cpu_count, getuid, listdir, path, stat, walk
 from pathlib import Path
 from shutil import copy
-from subprocess import check_output, Popen
+from subprocess import check_output, DEVNULL, Popen
 from sys import exit as s_exit
 from time import sleep
 
@@ -61,20 +62,14 @@ def scan_destination_convert():
                 print(f"[{_file}] Not a FLAC file, copying...")
                 copy(f"{_file}", f"{_file.replace(path.expanduser(source), path.expanduser(destination))}")
             else:
-                _file_s = _file.replace(' ', '\\ ').replace("'", "\\'").replace(')', '\\)').replace('(', '\\(') \
-                    .replace(']', '\\]').replace('[', '\\[').replace('&', '\\&').replace('`', '\\`') \
-                    .replace('$', '\\$')
-                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination)).replace(' ', '\\ ') \
-                              .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]') \
-                              .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')[
-                          :-5] + '.m4a'
+                _file_d = _file.replace(path.expanduser(source), path.expanduser(destination))[:-5] + '.m4a'
                 _active_processes = count_user_ffmpeg_processes()
                 while _active_processes >= cpu_count():
                     print(f"\nThere are already {_active_processes} processes running on your {cpu_count()} threads...\n")
                     sleep(1)
                     _active_processes = count_user_ffmpeg_processes()
                 _i += 1
-                print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
+                print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file} to {_file_d}...\u001b[0m\n")
                 # get relevant ReplayGain info
                 _audio = FLAC(f"{_file}")
                 if args.albumgain:
@@ -105,25 +100,24 @@ def scan_destination_convert():
                         _rgpeak = None
                 # determine ffmpeg arguments
                 if args.bake and _rggain is not None:
-                    _bake_args, _flac2pod_rg_tags = '-filter:a "volume=' + str(_rggain) + 'dB"', ''
+                    _bake_args, _flac2pod_rg_tags = ['-filter:a', 'volume=' + str(_rggain) + 'dB'], []
                 elif _rggain is not None and _rgpeak is not None:
-                    _bake_args, _flac2pod_rg_tags = '', f"-metadata comment='FLAC2PODRG#{_rggain}#{_rgpeak}#'"
+                    _bake_args, _flac2pod_rg_tags = [], ['-metadata', f"comment=FLAC2PODRG#{_rggain}#{_rgpeak}#"]
                 else:
-                    _bake_args, _flac2pod_rg_tags = '', ''
+                    _bake_args, _flac2pod_rg_tags = [], []
                 if args.preserve:
-                    _art_args = '-c:v copy -map_metadata 0:g'
+                    _art_args = ['-c:v', 'copy', '-map_metadata', '0:g']
                 else:
-                    _art_args = '-vn'
+                    _art_args = ['-vn']
                 # generate the appropriate ffmpeg command
-                _cmd = f"screen -DmS flac2pod{_i} ffmpeg -i {_file_s} {_art_args} -c:a aac -b:a 256k {_bake_args} " \
-                       f"{_flac2pod_rg_tags} -aac_pns 0 -movflags +faststart {_file_d} </dev/null"
+                _cmd = ['ffmpeg', '-i', _file] + _art_args + ['-c:a', 'aac', '-b:a', '256k'] + _bake_args + _flac2pod_rg_tags + ['-aac_pns', '0', '-movflags', '+faststart', _file_d]
                 if _rggain is not None:
                     print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
                 else:
                     print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
                     if args.stopifnogain:
                         s_exit(1)
-                Popen(_cmd, shell=True)
+                Popen(['screen', '-DmS', f"flac2pod{_i}"] + _cmd)
     _active_processes = count_user_ffmpeg_processes()
     while _active_processes != 0:
         print('\nPlease wait for the remaining conversions to complete...\n')
