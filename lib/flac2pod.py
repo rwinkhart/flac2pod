@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
-from posixpath import join
 from mutagen.flac import FLAC
 from os import cpu_count, getuid, listdir, path, stat, walk
 from pathlib import Path
 from shutil import copy
-from subprocess import check_output, DEVNULL, Popen
+from subprocess import DEVNULL, Popen
 from sys import exit as s_exit
 from time import sleep
+
 
 # scans source directory for music files, returns lists of album directories and their full paths
 def scan_source(_source):
@@ -27,9 +27,10 @@ def scan_source(_source):
         for _root, _directories, _files in walk(path.expanduser(_album)):
             for _filename in _files:
                 if _filename.lower().endswith('.flac') or _filename.lower().endswith('.mp3') or \
-                _filename.lower().endswith('.mp4') or _filename.lower().endswith('.m4a'):
+                        _filename.lower().endswith('.mp4') or _filename.lower().endswith('.m4a'):
                     _full_paths.append(f"{_album}/{_filename}")
     return _album_dirs, _full_paths
+
 
 # creates destination directory structure
 def create_destination():
@@ -37,19 +38,21 @@ def create_destination():
         Path(path.expanduser(_dir.replace(path.expanduser(source), path.expanduser(destination))))\
             .mkdir(0o700, parents=True, exist_ok=True)
 
+
 # counts how many ffmpeg processes are running under the current user
 def count_user_ffmpeg_processes():
-    user = getuid()
-    proc_directory = '/proc'
-    running_processes = 0
-    subdirectories = [d for d in listdir(proc_directory) if path.isdir(path.join(proc_directory, d))]
-    for subdirectory in subdirectories:
-        if subdirectory.isnumeric():
-            if stat(proc_directory + '/' + subdirectory).st_uid == user:
-                with open (proc_directory + '/' + subdirectory + '/comm', 'r') as f:
-                   if f.read().strip() == 'ffmpeg':
-                       running_processes += 1
-    return running_processes
+    _user = getuid()
+    _proc_directory = '/proc'
+    _running_processes = 0
+    _subdirectories = [_d for _d in listdir(_proc_directory) if path.isdir(path.join(_proc_directory, _d))]
+    for _subdirectory in _subdirectories:
+        if _subdirectory.isnumeric():
+            if stat(_proc_directory + '/' + _subdirectory).st_uid == _user:
+                with open(_proc_directory + '/' + _subdirectory + '/cmdline', 'r') as _f:
+                    if _f.read().startswith('ffmpeg'):
+                        _running_processes += 1
+    return _running_processes
+
 
 def scan_destination_convert():
     _i, _i_total, _total_files = 0, 0, len(source_directories[1])
@@ -65,7 +68,8 @@ def scan_destination_convert():
                 _file_d = _file.replace(path.expanduser(source), path.expanduser(destination))[:-5] + '.m4a'
                 _active_processes = count_user_ffmpeg_processes()
                 while _active_processes >= cpu_count():
-                    print(f"\nThere are already {_active_processes} processes running on your {cpu_count()} threads...\n")
+                    print(f"\nThere are already {_active_processes} processes running on your {cpu_count()} "
+                          f"threads...\n")
                     sleep(1)
                     _active_processes = count_user_ffmpeg_processes()
                 _i += 1
@@ -110,21 +114,23 @@ def scan_destination_convert():
                 else:
                     _art_args = ['-vn']
                 # generate the appropriate ffmpeg command
-                _cmd = ['ffmpeg', '-i', _file] + _art_args + ['-c:a', 'aac', '-b:a', '256k'] + _bake_args + _flac2pod_rg_tags + ['-aac_pns', '0', '-movflags', '+faststart', _file_d]
+                _cmd = ['ffmpeg', '-i', _file] + _art_args + ['-c:a', 'aac', '-b:a', '256k'] + _bake_args +\
+                    _flac2pod_rg_tags + ['-aac_pns', '0', '-movflags', '+faststart', _file_d]
                 if _rggain is not None:
                     print(f"\u001b[38;5;0;48;5;15mGain adjustment: {_rggain}dB\u001b[0m")
                 else:
-                    print(f"\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m")
+                    print('\u001b[38;5;0;48;5;88mNo ReplayGain data found!\u001b[0m')
                     if args.stopifnogain:
                         s_exit(1)
-                Popen(['screen', '-DmS', f"flac2pod{_i}"] + _cmd)
+                Popen(_cmd, stdout=DEVNULL, stderr=DEVNULL)
     _active_processes = count_user_ffmpeg_processes()
     while _active_processes != 0:
-        print('\nPlease wait for the remaining conversions to complete...\n')
+        print(f"\nPlease wait for the remaining {_active_processes} conversions to complete...\n")
         sleep(1)
         _active_processes = count_user_ffmpeg_processes()
     print('\niPod conversion complete!\n')
     s_exit(0)
+
 
 # argument parsing
 if __name__ == "__main__":

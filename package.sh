@@ -38,7 +38,7 @@ pkgdesc='Converts your FLAC library to be iPod-ready'
 url='https://github.com/rwinkhart/flac2pod'
 arch=('any')
 license=('GPL2')
-depends=(ffmpeg flac python python-mutagen python-pillow screen)
+depends=(ffmpeg flac python python-mutagen python-pillow)
 source=(\""$source"\")
 sha512sums=('"$sha512"')
 
