@@ -2,16 +2,14 @@
 
 from argparse import ArgumentParser
 from mutagen.flac import FLAC
-from os import cpu_count, path, walk
+from os import cpu_count, getuid, listdir, path, stat, walk
 from pathlib import Path
 from shutil import copy
 from subprocess import check_output, Popen
 from sys import exit as s_exit
 from time import sleep
 
-
-# utility functions
-
+# scans source directory for music files, returns lists of album directories and their full paths
 def scan_source(_source):
     _artist_dirs, _album_dirs, _full_paths = [], [], []
     for _root, _directories, _files in walk(path.expanduser(_source)):
@@ -32,11 +30,25 @@ def scan_source(_source):
                     _full_paths.append(f"{_album}/{_filename}")
     return _album_dirs, _full_paths
 
+# creates destination directory structure
 def create_destination():
     for _dir in source_directories[0]:
         Path(path.expanduser(_dir.replace(path.expanduser(source), path.expanduser(destination))))\
             .mkdir(0o700, parents=True, exist_ok=True)
 
+# counts how many ffmpeg processes are running under the current user
+def count_user_ffmpeg_processes():
+    user = getuid()
+    proc_directory = '/proc'
+    running_processes = 0
+    subdirectories = [d for d in listdir(proc_directory) if path.isdir(path.join(proc_directory, d))]
+    for subdirectory in subdirectories:
+        if subdirectory.isnumeric():
+            if stat(proc_directory + '/' + subdirectory).st_uid == user:
+                with open (proc_directory + '/' + subdirectory + '/comm', 'r') as f:
+                   if f.read().strip() == 'ffmpeg':
+                       running_processes += 1
+    return running_processes
 
 def scan_destination_convert():
     _i, _i_total, _total_files = 0, 0, len(source_directories[1])
@@ -56,12 +68,11 @@ def scan_destination_convert():
                               .replace("'", "\\'").replace(')', '\\)').replace('(', '\\(').replace(']', '\\]') \
                               .replace('[', '\\[').replace('&', '\\&').replace('`', '\\`').replace('$', '\\$')[
                           :-5] + '.m4a'
-                _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
-                if _active_processes >= cpu_count():
-                    while _active_processes >= cpu_count():
-                        print(f"\nThere are already {cpu_count()} processes running...\n")
-                        sleep(1)
-                        _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+                _active_processes = count_user_ffmpeg_processes()
+                while _active_processes >= cpu_count():
+                    print(f"\nThere are already {_active_processes} processes running on your {cpu_count()} threads...\n")
+                    sleep(1)
+                    _active_processes = count_user_ffmpeg_processes()
                 _i += 1
                 print(f"\n{_progress}% | \u001b[38;5;0;48;5;15mConverting {_file_s} to {_file_d}...\u001b[0m\n")
                 # get relevant ReplayGain info
@@ -113,15 +124,13 @@ def scan_destination_convert():
                     if args.stopifnogain:
                         s_exit(1)
                 Popen(_cmd, shell=True)
-    _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
+    _active_processes = count_user_ffmpeg_processes()
     while _active_processes != 0:
         print('\nPlease wait for the remaining conversions to complete...\n')
         sleep(1)
-        _active_processes = int(check_output('ps -C ffmpeg | wc -l', shell=True)) - 1
-    sleep(1)
+        _active_processes = count_user_ffmpeg_processes()
     print('\niPod conversion complete!\n')
     s_exit(0)
-
 
 # argument parsing
 if __name__ == "__main__":
